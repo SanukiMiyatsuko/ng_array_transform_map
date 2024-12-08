@@ -1,14 +1,14 @@
-// ψの準備
+// 2配列の準備
 export type ZT = { readonly type: "zero" };
-export type RAT_B = { readonly type: "plus", readonly add: RPT_B[] };
-export type RPT_B = { readonly type: "psi", readonly sub: number, readonly arg: RT_B };
-export type RT_B = ZT | RAT_B | RPT_B;
+export type RAT_t = { readonly type: "plus", readonly add: RPT_t[] };
+export type RPT_t = { readonly type: "psi", readonly sub: number, readonly arg: RT_t };
+export type RT_t = ZT | RAT_t | RPT_t;
 
 export const Z: ZT = { type: "zero" };
-export const ONE_B: RPT_B = { type: "psi", sub: 0, arg: Z };
+export const ONE_t: RPT_t = { type: "psi", sub: 0, arg: Z };
 
 // オブジェクトの相等判定
-export function equal(s: RT_B, t: RT_B): boolean {
+export function equal(s: RT_t, t: RT_t): boolean {
     if (s.type === "zero") {
         return t.type === "zero";
     } else if (s.type === "plus") {
@@ -24,12 +24,12 @@ export function equal(s: RT_B, t: RT_B): boolean {
     }
 }
 
-export function psi(sub: number, arg: RT_B): RPT_B {
+export function psi_t(sub: number, arg: RT_t): RPT_t {
     return { type: "psi", sub: sub, arg: arg };
 }
 
 // a+b を適切に整形して返す
-export function plus(a: RT_B, b: RT_B): RT_B {
+export function plus(a: RT_t, b: RT_t): RT_t {
     if (a.type === "zero") {
         return b;
     } else if (a.type === "plus") {
@@ -52,7 +52,7 @@ export function plus(a: RT_B, b: RT_B): RT_B {
 }
 
 // 要素が1個の配列は潰してから返す
-export function sanitize_plus_term_B(add: RPT_B[]): RPT_B | RAT_B {
+export function sanitize_plus_term_t(add: RPT_t[]): RPT_t | RAT_t {
     if (add.length === 1) {
         return add[0];
     } else {
@@ -61,7 +61,7 @@ export function sanitize_plus_term_B(add: RPT_B[]): RPT_B | RAT_B {
 }
 
 // s < t を判定
-export function less_than(s: RT_B, t: RT_B): boolean {
+export function less_than(s: RT_t, t: RT_t): boolean {
     if (s.type === "zero") {
         return t.type !== "zero";
     } else if (s.type === "psi") {
@@ -79,8 +79,8 @@ export function less_than(s: RT_B, t: RT_B): boolean {
         } else if (t.type === "psi") {
             return less_than(s.add[0], t)
         } else {
-            const s2 = sanitize_plus_term_B(s.add.slice(1));
-            const t2 = sanitize_plus_term_B(t.add.slice(1));
+            const s2 = sanitize_plus_term_t(s.add.slice(1));
+            const t2 = sanitize_plus_term_t(t.add.slice(1));
             return less_than(s.add[0], t.add[0]) ||
                 (equal(s.add[0], t.add[0]) && less_than(s2, t2));
         }
@@ -88,36 +88,36 @@ export function less_than(s: RT_B, t: RT_B): boolean {
 }
 
 // nより大きい方
-export function replace(n: number, s: RT_B): RT_B {
+export function replace(n: number, s: RT_t): RT_t {
     if (s.type === "zero") {
         return Z;
     } else if (s.type === "plus") {
         const a = s.add[0];
-        const b = sanitize_plus_term_B(s.add.slice(1));
+        const b = sanitize_plus_term_t(s.add.slice(1));
         return plus(replace(n, a), replace(n, b));
     } else {
-        return psi(n, s.arg);
+        return psi_t(n, s.arg);
     }
 }
 
-// 亞関数の準備
+// 多変数配列の準備
 // ===========================================
 
-export type AT_S = { readonly type: "plus", readonly add: PT_S[] };
-export type PT_S = { readonly type: "sub", readonly arr: T_S[] };
-export type T_S = ZT | AT_S | PT_S;
+export type AT_m = { readonly type: "plus", readonly add: PT_m[] };
+export type PT_m = { readonly type: "sub", readonly arr: T_m[] };
+export type T_m = ZT | AT_m | PT_m;
 
-export const ONE_S: PT_S = { type: "sub", arr: [Z] };
-export const OMEGA_S: PT_S = { type: "sub", arr: [ONE_S] };
-export const LOMEGA_S: PT_S = { type: "sub", arr: [Z, ONE_S] };
-export const IOTA_S: PT_S = { type: "sub", arr: [Z, Z, ONE_S] };
+export const ONE_m: PT_m = { type: "sub", arr: [Z] };
+export const OMEGA_m: PT_m = { type: "sub", arr: [ONE_m] };
+export const LOMEGA_m: PT_m = { type: "sub", arr: [Z, ONE_m] };
+export const IOTA_m: PT_m = { type: "sub", arr: [Z, Z, ONE_m] };
 
-export function subs(arr: T_S[]): PT_S {
+export function psi_m(arr: T_m[]): PT_m {
     return { type: "sub", arr: arr };
 }
 
 // 要素が1個の配列は潰してから返す
-export function sanitize_plus_term_S(add: PT_S[]): PT_S | AT_S {
+export function sanitize_plus_term_m(add: PT_m[]): PT_m | AT_m {
     if (add.length === 1) {
         return add[0];
     } else {
@@ -128,11 +128,11 @@ export function sanitize_plus_term_S(add: PT_S[]): PT_S | AT_S {
 // 本編
 // ===========================================
 
-export function nG(s: T_S): RT_B {
+export function nG(s: T_m): RT_t {
     if (s.type === "zero") {
         return Z;
     } else if (s.type === "plus") {
-        return plus(nG(s.add[0]), nG(sanitize_plus_term_S(s.add.slice(1))));
+        return plus(nG(s.add[0]), nG(sanitize_plus_term_m(s.add.slice(1))));
     } else {
         const a = s.arr;
         let k_max = a.length-1;
@@ -140,12 +140,12 @@ export function nG(s: T_S): RT_B {
             if (!(a[k_max].type === "zero")) break;
             k_max--;
         }
-        if (k_max === -1) return ONE_B;
+        if (k_max === -1) return ONE_t;
         const tarmList = [];
         for (let i = k_max; i > -1; i--) {
             tarmList.push(replace(i, nG(a[i])));
         }
-        return psi(0, tarmList.reduce((accumulator, currentValue) => plus(accumulator, currentValue)));
+        return psi_t(0, tarmList.reduce((accumulator, currentValue) => plus(accumulator, currentValue)));
     }
 }
 
@@ -161,7 +161,7 @@ export type Options = {
 };
 
 // オブジェクトから文字列へ
-function term_to_string(t: RT_B, options: Options): string {
+function term_to_string(t: RT_t, options: Options): string {
     if (t.type === "zero") {
         return "0";
     } else if (t.type === "psi") {
@@ -214,6 +214,6 @@ function abbrviate(str: string, options: Options): string {
     return str;
 }
 
-export function termToString(t: RT_B, options: Options): string {
+export function termToString(t: RT_t, options: Options): string {
     return abbrviate(term_to_string(t, options), options);
 }

@@ -1,12 +1,12 @@
-import { T_S, PT_S, AT_S, Z, ONE_S, OMEGA_S, IOTA_S, LOMEGA_S, sanitize_plus_term_S, subs } from "./code";
+import { T_m, PT_m, AT_m, Z, ONE_m, OMEGA_m, IOTA_m, LOMEGA_m, sanitize_plus_term_m, psi_m } from "./code";
 
-function from_nat(num: number): PT_S | AT_S {
-    const numterm: PT_S[] = [];
+function from_nat(num: number): PT_m | AT_m {
+    const numterm: PT_m[] = [];
     while (num > 0) {
-        numterm.push(ONE_S);
+        numterm.push(ONE_m);
         num--;
     }
-    return sanitize_plus_term_S(numterm);
+    return sanitize_plus_term_m(numterm);
 }
 
 function is_numchar(ch: string): boolean {
@@ -41,14 +41,9 @@ export class Scanner {
         return true;
     }
 
-    expectStrHead(): boolean {
+    consumeStrHead(): boolean {
         const ch = this.str[this.pos];
-        if (ch === undefined)
-            throw Error(
-                `${this.pos + 1}文字目に亞もしくはAが期待されていましたが、これ以上文字がありません`,
-            );
-        if (ch !== "ψ" && ch !== "p")
-            throw Error(`${this.pos + 1}文字目に亞もしくはAが期待されていましたが、${ch}が見つかりました`);
+        if (ch !== "ψ" && ch !== "p") return false;
         this.pos += 1;
         return true;
     }
@@ -66,81 +61,90 @@ export class Scanner {
         this.pos += 1;
     }
 
+    parse_number(): number {
+        let num = parseInt(this.str[this.pos]);
+        this.pos += 1;
+        while (is_numchar(this.str[this.pos])) {
+            num = num * 10 + parseInt(this.str[this.pos]);
+            this.pos += 1;
+        }
+        return num;
+    }
+
     // 式をパース
-    parse_term(): T_S {
+    parse_term(): T_m {
         if (this.str === "") throw Error(`Empty string`);
         if (this.consume("0")) {
             return Z;
-        } else if (is_numchar(this.str[this.pos])) {
-            // 0以外の数字にマッチ
-            let list: PT_S[] = [];
-            const num_start = this.pos;
-            let num_end = num_start;
-            while (is_numchar(this.str[num_end])) {
-                num_end += 1;
-            }
-            const num = parseInt(this.str.slice(num_start, num_end + 1));
-            this.pos = num_end;
-            const fn = from_nat(num);
-            if (fn.type === "plus") list = list.concat(fn.add);
-            else list.push(fn);
-            while (this.consume("+")) {
-                const term = this.parse_term();
-                if (term.type === "zero") {
-                    throw Error(`0は+で接続できません`);
-                } else if (term.type === "plus") {
-                    list = list.concat(term.add);
-                } else {
-                    list.push(term);
-                }
-            }
-            return sanitize_plus_term_S(list);
         } else {
-            let list: PT_S[] = [];
-            const first = this.parse_principal();
-            list.push(first);
-            while (this.consume("+")) {
-                const term = this.parse_term();
-                if (term.type === "zero") {
-                    throw Error(`0は+で接続できません`);
-                } else if (term.type === "plus") {
-                    list = list.concat(term.add);
-                } else {
-                    list.push(term);
-                }
+            let list: PT_m[] = [];
+            if (is_numchar(this.str[this.pos])) {
+                // 0以外の数字にマッチ
+                const num = this.parse_number();
+                const fn = from_nat(num);
+                if (fn.type === "plus") list = fn.add;
+                else list.push(fn);
+            } else {
+                const first = this.parse_principal();
+                list.push(first);
             }
-            return sanitize_plus_term_S(list);
+            while (this.consume("+")) {
+                let term: AT_m | PT_m;
+                if (is_numchar(this.str[this.pos])) {
+                    const num = this.parse_number();
+                    term = from_nat(num);
+                } else {
+                    term = this.parse_principal();
+                }
+                if (term.type === "plus") list = list.concat(term.add);
+                else list.push(term);
+            }
+            return sanitize_plus_term_m(list);
         }
     }
 
     // principal psi termのパース
-    parse_principal(): PT_S {
+    parse_principal(): PT_m {
         if (this.consume("1")) {
-            return ONE_S;
+            return ONE_m;
         } else if (this.consume("w") || this.consume("ω")) {
-            return OMEGA_S;
+            return OMEGA_m;
         } else if (this.consume("W") || this.consume("Ω")) {
-            return LOMEGA_S;
+            return LOMEGA_m;
         } else if (this.consume("I")) {
-            return IOTA_S;
+            return IOTA_m;
         } else {
-            this.expectStrHead()
-            const argarr: T_S[] = [];
-            if (this.consume("(")) {
-                const term = this.parse_term();
-                argarr.push(term);
-                if (this.consume(")")) return subs(argarr);
-                this.expect(",");
+            const argarr: T_m[] = [];
+            if (this.consumeStrHead()) {
+                if (this.consume("(")) {
+                    const term = this.parse_term();
+                    argarr.push(term);
+                    if (this.consume(")")) return psi_m(argarr);
+                    this.expect(",");
+                } else {
+                    this.consume("_");
+                    if (this.consume("{")) {
+                        const term = this.parse_term();
+                        argarr.push(term);
+                        this.expect("}");
+                        this.expect("(");
+                    } else {
+                        const term = this.parse_term();
+                        argarr.push(term);
+                        this.expect("(");
+                    }
+                }
             } else {
-                this.consume("_");
-                if (this.consume("{")) {
+                if (this.consume("(")) {
+                    const term = this.parse_term();
+                    argarr.push(term);
+                    if (this.consume(")")) return psi_m(argarr);
+                    this.expect(",");
+                } else {
+                    this.expect("{");
                     const term = this.parse_term();
                     argarr.push(term);
                     this.expect("}");
-                    this.expect("(");
-                } else {
-                    const term = this.parse_term();
-                    argarr.push(term);
                     this.expect("(");
                 }
             }
@@ -151,7 +155,7 @@ export class Scanner {
                 argarr.push(term);
             }
             this.expect(")");
-            return subs(argarr.reverse());
+            return psi_m(argarr.reverse());
         }
     }
 }
