@@ -180,7 +180,7 @@ function term_to_string(t: RT_t, options: Options): string {
 }
 
 function to_TeX(str: string): string {
-    str = str.replace(RegExp("ψ", "g"), "\\psi");
+    str = str.replace(/ψ/g, "\\psi");
     str = str.replace(/ω/g, "\\omega");
     str = str.replace(/Ω/g, "\\Omega");
     return str;

@@ -50,7 +50,7 @@ function App() {
           入力は、任意の0 &lt; nに対して、ψ(a_n,a_&#123;n-1&#125;,...,a_2,a_1,a_0), ψ_&#123;a_n&#125;(a_a_&#123;n-1&#125;,...,a_2,a_1,a_0)の形式で行ってください。<br />
           _, &#123;, &#125;は省略可能です。<br />
           略記として、1 := ψ(0), n := 1 + 1 + ...(n個の1)... + 1, ω := ψ(1), Ω := ψ(1,0), I := ψ(1,0,0)が使用可能。<br />
-          また、ψはpで、ωはwで、ΩはWで代用可能。
+          また、ψは他の一文字で、ωはwで、ΩはWで代用可能。
         </p>
         A:
         <input
@@ -70,7 +70,7 @@ function App() {
           <ul>
             <li><label className="checkbox">
               <input type="checkbox" checked={options.checkOnOffo} onChange={() => handleCheckboxChange('checkOnOffo')} />
-              &nbsp;ψ_0(1)をωで出力
+              &nbsp;ψ{options.checkOnOffB ? `(1)` : `${options.checkOnOffA ? `_0(1)` : `(0,1)`}`}をωで出力
             </label></li>
             <li><label className="checkbox">
               <input type="checkbox" checked={options.checkOnOffO} onChange={() => handleCheckboxChange('checkOnOffO')} />
